@@ -148,6 +148,54 @@ namespace Aroc
                 ct.Register(action, isSync);
             }
         }
+
+        /// <summary>
+        /// 启动一系列Task
+        /// </summary>
+        /// <param name="createOption"></param>
+        /// <param name="continuationOption"></param>
+        /// <param name="taskScheduler"></param>
+        /// <param name="actions"></param>
+        /// <returns></returns>
+        public static CancellationTokenSource StartThreads(TaskCreationOptions createOption, TaskContinuationOptions continuationOption, TaskScheduler taskScheduler, params Action<CancellationToken>[] actions)
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            TaskFactory tf = new TaskFactory(cts.Token, createOption, continuationOption, taskScheduler);
+            foreach (var action in actions)
+            {
+                tf.StartNew(() => { action(cts.Token); });
+            }
+            return cts;
+        }
+
+        /// <summary>
+        /// 启动一系列Task
+        /// </summary>
+        /// <param name="createOption"></param>
+        /// <param name="continuationOption"></param>
+        /// <param name="taskScheduler"></param>
+        /// <param name="actions"></param>
+        /// <returns></returns>
+        public static CancellationTokenSource StartThreads(TaskCreationOptions createOption, TaskContinuationOptions continuationOption, TaskScheduler taskScheduler, params Func<CancellationToken, object>[] actions)
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            TaskFactory<object> tf = new TaskFactory<object>(cts.Token, createOption, continuationOption, taskScheduler);
+            foreach (var action in actions)
+            {
+                tf.StartNew(() => action(cts.Token));
+            }
+            return cts;
+        }
+
+        public static Timer ExecuteTime(Action<object> action, object state = null)
+        {
+            return null;
+        }
+
+        public static Timer ExecuteOnceTime(Action<object> action)
+        {
+            return null;
+        }
     }
 }
 

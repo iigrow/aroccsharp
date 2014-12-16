@@ -176,7 +176,7 @@ namespace ArocTest
                 new Task(() => { Console.WriteLine("first"); }).Start();
                 new Task(() => { Console.WriteLine("second"); }).Start();
             });
-
+            
             // t.ContinueWith(task =>Array.ForEach(),TaskContinuationOptions.AttachedToParent);
         }
     }
