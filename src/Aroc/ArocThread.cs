@@ -157,15 +157,14 @@ namespace Aroc
         /// <param name="taskScheduler"></param>
         /// <param name="actions"></param>
         /// <returns></returns>
-        public static CancellationTokenSource StartThreads(TaskCreationOptions createOption, TaskContinuationOptions continuationOption, TaskScheduler taskScheduler, params Action<CancellationToken>[] actions)
+        public static TaskFactory StartThreads(CancellationToken token, TaskCreationOptions createOption, TaskContinuationOptions continuationOption, TaskScheduler taskScheduler, params Action<CancellationToken>[] actions)
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
-            TaskFactory tf = new TaskFactory(cts.Token, createOption, continuationOption, taskScheduler);
+            TaskFactory tf = new TaskFactory(token, createOption, continuationOption, taskScheduler);
             foreach (var action in actions)
             {
-                tf.StartNew(() => { action(cts.Token); });
+                tf.StartNew(() => { action(token); });
             }
-            return cts;
+            return tf;
         }
 
         /// <summary>
@@ -176,25 +175,47 @@ namespace Aroc
         /// <param name="taskScheduler"></param>
         /// <param name="actions"></param>
         /// <returns></returns>
-        public static CancellationTokenSource StartThreads(TaskCreationOptions createOption, TaskContinuationOptions continuationOption, TaskScheduler taskScheduler, params Func<CancellationToken, object>[] actions)
+        public static TaskFactory<object> StartThreads(CancellationToken token, TaskCreationOptions createOption, TaskContinuationOptions continuationOption, TaskScheduler taskScheduler, params Func<CancellationToken, object>[] actions)
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
-            TaskFactory<object> tf = new TaskFactory<object>(cts.Token, createOption, continuationOption, taskScheduler);
+            TaskFactory<object> tf = new TaskFactory<object>(token, createOption, continuationOption, taskScheduler);
             foreach (var action in actions)
             {
-                tf.StartNew(() => action(cts.Token));
+                tf.StartNew(() => action(token));
             }
-            return cts;
+            return tf;
         }
 
-        public static Timer ExecuteTime(Action<object> action, object state = null)
+        /// <summary>
+        /// 定时执行
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static Timer ExecuteTime(Action<object> action, int millisecond, int periodsecond, object state = null)
         {
-            return null;
+            Timer timer = null;
+            timer = new Timer((obj) =>
+            {
+                action(obj);
+                timer.Change(periodsecond, Timeout.Infinite);
+            }, state, millisecond, Timeout.Infinite);
+            return timer;
         }
 
-        public static Timer ExecuteOnceTime(Action<object> action)
+        /// <summary>
+        /// 执行一次
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static Timer ExecuteOnceTime(Action<object> action, int millisecond, object state = null)
         {
-            return null;
+            Timer timer = new Timer((obj) =>
+            {
+                action(obj);
+            }, state, millisecond, Timeout.Infinite);
+
+            return timer;
         }
     }
 }

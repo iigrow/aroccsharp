@@ -117,6 +117,111 @@ namespace ArocTest
             Assert.AreEqual(actualyData, tagData);
         }
 
+        [TestMethod]
+        public void CreateThreadsTest()
+        {
+            int t1 = 0;
+            int t2 = 0;
+            CancellationTokenSource cts = ArocThread.CreateThreads(
+                token =>
+                {
+                    t1 = 100;
+                    while (!token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(500);
+                    }
+                    t1 = 1000;
+                },
+                token =>
+                {
+                    t2 = 100;
+                    while (!token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(500);
+                    }
+                    t2 = 1000;
+                });
+
+            Thread.Sleep(2000);
+
+            Assert.AreEqual(t1, 100);
+            Assert.AreEqual(t2, 100);
+
+            cts.Cancel();
+
+            Thread.Sleep(2000);
+
+            Assert.AreEqual(t1, 1000);
+            Assert.AreEqual(t2, 1000);
+        }
+
+        [TestMethod]
+        public void ReigsterCancelCallbackTest()
+        {
+            CancellationTokenSource cts = ArocThread.CreateThreads(
+                token =>
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(1000);
+                    }
+                });
+            int cancelTask1 = 0;
+            int cancelTask2 = 0;
+            ArocThread.ReigsterCancelCallback(cts.Token, false, (obj) => { cancelTask1 = 1; }, (obj) => { cancelTask2 = 1; });
+
+            Thread.Sleep(1000);
+            cts.Cancel();
+
+            Assert.AreEqual(cancelTask1, 1);
+            Assert.AreEqual(cancelTask2, 1);
+        }
+
+        [TestMethod]
+        public void StartThreadsTest()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            TaskFactory tf = ArocThread.StartThreads(cts.Token, TaskCreationOptions.None, TaskContinuationOptions.None, TaskScheduler.Default,
+                token => { },
+                token => { }
+                );
+
+            TaskFactory<object> tfobj = ArocThread.StartThreads(cts.Token, TaskCreationOptions.None, TaskContinuationOptions.None, TaskScheduler.Default,
+                token => { return new object(); },
+                token => { return new object(); }
+                );
+        }
+
+        [TestMethod]
+        public void ExecuteTimeTest()
+        {
+            int times = 0;
+            ArocThread.ExecuteTime(obj => { Interlocked.Add(ref times, 1); }, 1000, 1000);
+
+            Thread.Sleep(2000);
+
+            Assert.AreNotEqual(times, 0);
+
+            Thread.Sleep(2000);
+
+            Assert.IsTrue(times > 1);
+        }
+
+        [TestMethod]
+        public void ExecuteOnceTimeTest()
+        {
+            int times = 0;
+            ArocThread.ExecuteOnceTime(obj => { Interlocked.Add(ref times, 1); }, 1000, 1000);
+
+            Thread.Sleep(2000);
+
+            Assert.AreEqual(times, 1);
+
+            Thread.Sleep(2000);
+
+            Assert.AreEqual(times, 1);
+        }
+
         public void CatchException()
         {
             try
@@ -176,7 +281,7 @@ namespace ArocTest
                 new Task(() => { Console.WriteLine("first"); }).Start();
                 new Task(() => { Console.WriteLine("second"); }).Start();
             });
-            
+
             // t.ContinueWith(task =>Array.ForEach(),TaskContinuationOptions.AttachedToParent);
         }
     }
